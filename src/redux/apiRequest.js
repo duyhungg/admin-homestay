@@ -23,7 +23,8 @@ export const loginUser = async (user, dispatch, navigate) => {
       }
     );
     dispatch(loginSuccess(res.data));
-    navigate("/");
+    navigate("/user");
+    window.localStorage.setItem("token", res.data.data.token);
     return null; // Trả về null khi không có lỗi
   } catch (error) {
     dispatch(loginFailed(error.response.data.message));
@@ -44,7 +45,7 @@ export const registerUser = async (user, dispatch, navigate) => {
       withCredentials: true,
     });
     dispatch(registerSuccess());
-    navigate("/login");
+    navigate("/");
   } catch (error) {
     dispatch(registerFailed());
   }
@@ -64,7 +65,8 @@ export const logOut = async (dispatch, navigate, accessToken, axiosJWT) => {
       }
     );
     dispatch(logoutSuccess());
-    navigate("/login");
+    window.localStorage.removeItem("token");
+    navigate("/");
   } catch (error) {
     dispatch(logoutFailed());
   }

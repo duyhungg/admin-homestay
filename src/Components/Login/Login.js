@@ -1,5 +1,4 @@
 import {  useState } from "react";
-import "./login.css";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../../redux/apiRequest";
 import { useDispatch, useSelector } from "react-redux";
@@ -51,9 +50,8 @@ const Login = () => {
             Log in{" "}
           </button>
         </form>
-        <div className="login-register"> Don't have an account yet? </div>
         <Link className="login-register-link" to="/register">
-          Register one for free{" "}
+          Register{" "}
         </Link>
       </section>
     );

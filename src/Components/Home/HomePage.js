@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import "../../App.css";
-import { useSelector } from "react-redux";
 import axios from "axios";
-
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logOut, resetLoginError } from "../../redux/apiRequest";
+import { createAxios } from "../../createInstance";
+import { logoutSuccess } from "../../redux/authSlice";
+import Loading from "../Loading/Loading";
 const HomePage = () => {
-  const user = useSelector((state) => state.auth.login?.currentUser)
-  const [test, setTest] = useState("")
-  
+  const user = useSelector((state) => state.auth.login?.currentUser);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  let axiosJWT = createAxios(user, dispatch, logoutSuccess);
+  const [test, setTest] = useState("");
 
   useEffect(() => {
     const handleRefresh = async () => {
@@ -18,10 +24,10 @@ const HomePage = () => {
             headers: {
               Authorization: `Bearer ${user?.data.token}`,
             },
-            withCredentials: true
+            withCredentials: true,
           }
         );
-        setTest("")
+        setTest("");
         console.log(res);
       } catch (error) {
         console.error(error);
@@ -30,8 +36,8 @@ const HomePage = () => {
 
     const handleKeyDown = (event) => {
       if (event.keyCode === 116) {
-        event.preventDefault(); 
-        handleRefresh(); 
+        event.preventDefault();
+        handleRefresh();
       }
     };
 
@@ -42,7 +48,7 @@ const HomePage = () => {
     };
   }, []);
 
-  const handleRefresh = async() => {
+  const handleRefresh = async () => {
     let res = await axios.post(
       "https://auth-server-fmp.vercel.app/test",
       {},
@@ -50,21 +56,31 @@ const HomePage = () => {
         headers: {
           Authorization: `Bearer ${user?.data.token}`,
         },
-        withCredentials: true
+        withCredentials: true,
       }
     );
     const msg = res.data.message;
     setTest(msg);
-  }
+  };
+  const handleLogout = () => {
+    dispatch(resetLoginError());
+    logOut(dispatch, navigate, user?.data.token, axiosJWT);
+  };
 
   return (
-    <main className="home-container">
+    <main className="container">
       {user ? (
         <>
-          <div className="home-role">Your role: {user?.data.role}</div>
-          <div>
+          <div className="home-role ">Your role: {user?.data.role}</div>
+          <p className="navbar-user">
+            Hello, <span> {user?.data.email} </span>{" "}
+          </p>
+          <div className="gap-20 mb-3">
             <button className="btn btn-success mt-5" onClick={handleRefresh}>
               Gọi API Test
+            </button>{" "}
+            <button className="btn btn-success mt-5 " onClick={handleLogout}>
+              Logout
             </button>
           </div>
           <div className="home-title">
@@ -72,12 +88,7 @@ const HomePage = () => {
           </div>
         </>
       ) : (
-        <>
-          <div className="text-danger error-login">
-            <h1>Welcome to FMP</h1>
-            <p>Đăng nhập để hiển thị</p>
-          </div>
-        </>
+        <Loading></Loading>
       )}
     </main>
   );

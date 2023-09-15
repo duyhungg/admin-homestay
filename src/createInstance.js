@@ -13,6 +13,8 @@ const refreshToken = async (user) => {
         withCredentials: true,
       }
     );
+    window.localStorage.removeItem("token");
+    window.localStorage.setItem("token", res.data.data.token);
     return res.data;
   } catch (error) {
     console.log(error);
