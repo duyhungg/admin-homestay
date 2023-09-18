@@ -7,16 +7,19 @@ import { logOut, resetLoginError } from "../../redux/apiRequest";
 import { createAxios } from "../../createInstance";
 import { logoutSuccess } from "../../redux/authSlice";
 import Loading from "../Loading/Loading";
+
 const HomePage = () => {
   const user = useSelector((state) => state.auth.login?.currentUser);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   let axiosJWT = createAxios(user, dispatch, logoutSuccess);
   const [test, setTest] = useState("");
+  const [isApiCalling, setIsApiCalling] = useState(false); // Thêm state để theo dõi trạng thái của việc gọi API
 
   useEffect(() => {
     const handleRefresh = async () => {
       try {
+        setIsApiCalling(true); // Bắt đầu gọi API, tắt nút "Gọi API Test"
         const res = await axios.post(
           "https://auth-server-fmp.vercel.app/auth/refresh-token",
           {},
@@ -31,6 +34,8 @@ const HomePage = () => {
         console.log(res);
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsApiCalling(false); // Hoàn thành gọi API, mở lại nút "Gọi API Test"
       }
     };
 
@@ -49,6 +54,7 @@ const HomePage = () => {
   }, []);
 
   const handleRefresh = async () => {
+    setIsApiCalling(true);
     let res = await axios.post(
       "https://auth-server-fmp.vercel.app/test",
       {},
@@ -61,7 +67,9 @@ const HomePage = () => {
     );
     const msg = res.data.message;
     setTest(msg);
+    setIsApiCalling(false); // Hoàn thành gọi API, mở lại nút "Gọi API Test"
   };
+
   const handleLogout = () => {
     dispatch(resetLoginError());
     logOut(dispatch, navigate, user?.data.token, axiosJWT);
@@ -71,12 +79,17 @@ const HomePage = () => {
     <main className="container">
       {user ? (
         <>
-          <div className="home-role ">Your role: {user?.data.role}</div>
+          <div className="home-role">Your role: {user?.data.role}</div>
           <p className="navbar-user">
             Hello, <span> {user?.data.email} </span>{" "}
           </p>
           <div className="gap-20 mb-3">
-            <button className="btn btn-success mt-5" onClick={handleRefresh}>
+            <button
+              className="btn btn-success mt-5"
+              id="refresh"
+              onClick={handleRefresh}
+              disabled={isApiCalling} // Tắt nút khi đang gọi API
+            >
               Gọi API Test
             </button>{" "}
             <button className="btn btn-success mt-5 " onClick={handleLogout}>
