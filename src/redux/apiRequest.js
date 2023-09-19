@@ -11,6 +11,7 @@ import {
   registerStart,
   registerSuccess,
 } from "./authSlice";
+import { testFailed, testStart, testSuccess } from "./testSlice";
 
 export const loginUser = async (user, dispatch, navigate) => {
   dispatch(loginStart());
@@ -23,8 +24,8 @@ export const loginUser = async (user, dispatch, navigate) => {
       }
     );
     dispatch(loginSuccess(res.data));
+    window.localStorage.setItem("token", res?.data.data.token);
     navigate("/user");
-    window.localStorage.setItem("token", res.data.data.token);
     return null; // Trả về null khi không có lỗi
   } catch (error) {
     dispatch(loginFailed(error.response.data.message));
@@ -46,8 +47,10 @@ export const registerUser = async (user, dispatch, navigate) => {
     });
     dispatch(registerSuccess());
     navigate("/");
+    return null;
   } catch (error) {
-    dispatch(registerFailed());
+    dispatch(registerFailed(error.response.data.message));
+    return error.response.data.message;
   }
 };
 
@@ -69,5 +72,24 @@ export const logOut = async (dispatch, navigate, accessToken, axiosJWT) => {
     navigate("/");
   } catch (error) {
     dispatch(logoutFailed());
+  }
+};
+
+export const apiTest = async (dispatch, accessToken, axiosJWT) => {
+  dispatch(testStart());
+  try {
+    const res = await axiosJWT.post(
+      "https://auth-server-fmp.vercel.app/test",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        withCredential: true,
+      }
+    );
+    dispatch(testSuccess(res.data));
+  } catch (error) {
+    dispatch(testFailed());
   }
 };

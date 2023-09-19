@@ -1,25 +1,25 @@
 import { useEffect, useState } from "react";
-import "../../App.css";
-import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { logOut, resetLoginError } from "../../redux/apiRequest";
+import axios from "axios";
 import { createAxios } from "../../createInstance";
-import { logoutSuccess } from "../../redux/authSlice";
+import { testSuccess } from "../../redux/testSlice";
+import { apiTest, logOut, resetLoginError } from "../../redux/apiRequest";
+import jwt_decode from "jwt-decode";
+import { logoutSuccess, updateToken } from "../../redux/authSlice";
+import { useNavigate } from "react-router-dom";
 import Loading from "../Loading/Loading";
 
 const HomePage = () => {
   const user = useSelector((state) => state.auth.login?.currentUser);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  let axiosJWT = createAxios(user, dispatch, logoutSuccess);
   const [test, setTest] = useState("");
-  const [isApiCalling, setIsApiCalling] = useState(false); // Thêm state để theo dõi trạng thái của việc gọi API
-
+  const dispatch = useDispatch();
+  let axiosJWT = createAxios(user, dispatch, logoutSuccess);
+  const navigate = useNavigate();
+  const [isFetching, setIsFetching] = useState(false);
+  const [isApiRequesting, setIsApiRequesting] = useState(false);
   useEffect(() => {
     const handleRefresh = async () => {
       try {
-        setIsApiCalling(true); // Bắt đầu gọi API, tắt nút "Gọi API Test"
         const res = await axios.post(
           "https://auth-server-fmp.vercel.app/auth/refresh-token",
           {},
@@ -34,8 +34,6 @@ const HomePage = () => {
         console.log(res);
       } catch (error) {
         console.error(error);
-      } finally {
-        setIsApiCalling(false); // Hoàn thành gọi API, mở lại nút "Gọi API Test"
       }
     };
 
@@ -53,26 +51,122 @@ const HomePage = () => {
     };
   }, []);
 
-  const handleRefresh = async () => {
-    setIsApiCalling(true);
-    let res = await axios.post(
-      "https://auth-server-fmp.vercel.app/test",
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${user?.data.token}`,
-        },
-        withCredentials: true,
-      }
-    );
-    const msg = res.data.message;
-    setTest(msg);
-    setIsApiCalling(false); // Hoàn thành gọi API, mở lại nút "Gọi API Test"
-  };
+  // const handleTest = () => {
+  //   apiTest(dispatch, user?.data.token, axiosJWT);
+  //   msg = message?.message;
+  //   setTest(msg);
+  // }
 
+  function isTokenExpired(token) {
+    if (!token) {
+      return true;
+    }
+
+    const decodeToken = jwt_decode(token);
+    if (!decodeToken) {
+      return true;
+    }
+
+    const currentTime = new Date().getTime() / 1000;
+    if (currentTime >= decodeToken.exp) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  const handleApiRequest = async () => {
+    if (isApiRequesting) {
+      return;
+    }
+
+    setIsApiRequesting(true);
+
+    let token = user?.data.token;
+    console.log("check", token);
+    // Kiểm tra thời gian hết hạn của token
+    const isToken = isTokenExpired(token); // Đây là một hàm bạn cần tự định nghĩa
+
+    if (isToken) {
+      try {
+        // Token hết hạn, gọi API refresh token
+        const refreshRes = await axios.post(
+          "https://auth-server-fmp.vercel.app/auth/refresh-token",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+          }
+        );
+
+        console.log("refresh", refreshRes);
+
+        // Lấy token mới thành công
+        token = refreshRes.data.data.token;
+        dispatch(updateToken(token));
+
+        // Lưu newToken vào local storage hoặc nơi lưu trữ khác
+      } catch (refreshError) {
+        if (refreshError.response) {
+          const refreshStatus = refreshError.response.status;
+
+          if (refreshStatus === 401) {
+            // Mã trạng thái 401 khi cố gắng refresh token nghĩa là refre
+            logOut(dispatch, navigate, user?.data.token, axiosJWT);
+            return; // Kết thúc xử lý nếu refresh token hết hạn
+          }
+        }
+      }
+    }
+
+    // Sau khi kiểm tra token và refresh token (nếu cần), thực hiện gọi API test
+    try {
+      let res = await axios.post(
+        "https://auth-server-fmp.vercel.app/test",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      console.log("test", res.data);
+      setTest(res.data.message);
+
+      // Xử lý phản hồi từ API test ở đây
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 401) {
+          // Mã trạng thái 401 sau khi gọi API test nghĩa là token hết hạn
+          // Bạn có thể thực hiện đăng xuất người dùng ở đây
+          logOut(dispatch, navigate, user?.data.token, axiosJWT);
+          console.log("Token hết hạn. Đăng xuất người dùng.");
+        }
+      }
+    } finally {
+      // Tắt cờ isApiRequesting sau khi yêu cầu hoàn thành (thành công hoặc thất bại)
+      setIsApiRequesting(false);
+    }
+  };
   const handleLogout = () => {
-    dispatch(resetLoginError());
-    logOut(dispatch, navigate, user?.data.token, axiosJWT);
+    if (isFetching) {
+      return;
+    }
+    setIsFetching(true);
+    try {
+      dispatch(resetLoginError());
+      logOut(dispatch, navigate, user?.data.token, axiosJWT);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   return (
@@ -87,12 +181,16 @@ const HomePage = () => {
             <button
               className="btn btn-success mt-5"
               id="refresh"
-              onClick={handleRefresh}
-              disabled={isApiCalling} // Tắt nút khi đang gọi API
+              onClick={handleApiRequest}
+              disabled={isApiRequesting}
             >
               Gọi API Test
             </button>{" "}
-            <button className="btn btn-success mt-5 " onClick={handleLogout}>
+            <button
+              className="btn btn-success mt-5 "
+              onClick={handleLogout}
+              disabled={isFetching}
+            >
               Logout
             </button>
           </div>

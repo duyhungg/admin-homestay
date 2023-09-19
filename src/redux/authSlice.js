@@ -13,6 +13,7 @@ const authSlice = createSlice({
       isFetching: false,
       error: false,
       success: false,
+      msg: null,
     },
   },
   reducers: {
@@ -41,10 +42,12 @@ const authSlice = createSlice({
       state.register.isFetching = false;
       state.register.error = false;
       state.register.success = true;
+      state.login.msg = null;
     },
-    registerFailed: (state) => {
+    registerFailed: (state, action) => {
       state.register.isFetching = false;
       state.register.error = true;
+      state.login.msg = action.payload;
     },
     logoutStart: (state) => {
       state.login.isFetching = true;
@@ -60,6 +63,10 @@ const authSlice = createSlice({
       state.login.error = true;
       state.login.msg = null;
     },
+    updateToken: (state, action) => {
+      // Cập nhật token trong Redux store
+      state.login.currentUser.data.token = action.payload;
+    },
   },
 });
 
@@ -74,6 +81,7 @@ export const {
   logoutStart,
   logoutSuccess,
   loginResetError,
+  updateToken,
 } = authSlice.actions;
 
 export default authSlice.reducer;

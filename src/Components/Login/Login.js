@@ -7,37 +7,35 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isValidate, setIsValidate] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false); // Thêm state để theo dõi việc đăng nhập
+  const [isFetching, setIsFetching] = useState(false);
   const error = useSelector((state) => state.auth.login?.msg);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Khi isLoggingIn thay đổi, bạn có thể tắt/bật nút "login" tại đây
-    if (isLoggingIn) {
-      // Đang đăng nhập, tắt nút "login"
-      document.getElementById("loginButton").setAttribute("disabled", "true");
-    } else {
-      // Không đăng nhập, bật lại nút "login"
-      document.getElementById("loginButton").removeAttribute("disabled");
-    }
-  }, [isLoggingIn]);
-
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isFetching) {
+      return;
+    }
+
+    setIsFetching(true);
     const newUser = {
       email: email,
       password: password,
     };
-    const errorMessage = await loginUser(newUser, dispatch, navigate);
+
     if (!email || !password) {
       setIsValidate("Cần điền đầy đủ thông tin!!");
+      setIsFetching(false); // Tắt trạng thái fetch
       return;
     } else {
+      const errorMessage = await loginUser(newUser, dispatch, navigate);
+      // Xử lý lỗi từ API login
       setIsValidate(errorMessage || error);
-      setIsLoggingIn(true); // Đánh dấu đang đăng nhập
-      await loginUser(newUser, dispatch, navigate);
-      setIsLoggingIn(false); // Đánh dấu đã hoàn thành đăng nhập
+      if (!errorMessage) {
+        navigate("/user"); // Thay đổi '/new-page' thành đường dẫn mà bạn muốn chuyển hướng đến
+      }
+      setIsFetching(false); // Tắt trạng thái fetch sau khi hoàn thành
     }
   };
 
@@ -54,6 +52,7 @@ const Login = () => {
               className="form-control"
               placeholder="Enter email"
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isFetching} // Tắt input khi đang fetch
             />
           </div>
 
@@ -64,11 +63,17 @@ const Login = () => {
               className="form-control"
               placeholder="Enter password"
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isFetching} // Tắt input khi đang fetch
             />
           </div>
 
           <div className="d-grid">
-            <button type="submit" className="btn btn-primary" id="loginButton">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              id="loginButton"
+              disabled={isFetching} // Tắt nút "Login" khi đang fetch
+            >
               Login
             </button>
           </div>
