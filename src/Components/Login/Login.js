@@ -1,41 +1,40 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser } from "../../redux/apiRequest";
-import { useDispatch, useSelector } from "react-redux";
-
+import axios from "axios";
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isValidate, setIsValidate] = useState("");
-  const [isFetching, setIsFetching] = useState(false);
-  const error = useSelector((state) => state.auth.login?.msg);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [username, setUserName] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (isFetching) {
+
+    // Kiểm tra các điều kiện trước khi gửi yêu cầu đăng nhập
+    if (!username || !password) {
+      console.error("Username and password are required.");
       return;
     }
 
-    setIsFetching(true);
-    const newUser = {
-      email: email,
-      password: password,
-    };
-
-    if (!email || !password) {
-      setIsValidate("Cần điền đầy đủ thông tin!!");
-      setIsFetching(false); // Tắt trạng thái fetch
-      return;
-    } else {
-      const errorMessage = await loginUser(newUser, dispatch, navigate);
-      // Xử lý lỗi từ API login
-      setIsValidate(errorMessage || error);
-      if (!errorMessage) {
-        navigate("/user"); // Thay đổi '/new-page' thành đường dẫn mà bạn muốn chuyển hướng đến
+    // Gọi hàm API đăng nhập bằng Axios
+    try {
+      const response = await axios.post(
+        "https://gin-homestay.onrender.com/api/login",
+        {
+          username,
+          password,
+        }
+      );
+      // Xử lý kết quả từ hàm API
+      if (response.data.user) {
+        // Điều hướng đến trang chính sau khi đăng nhập thành công
+        localStorage.setItem("token", response.data.access_token);
+        navigate("/user");
+      } else {
+        // Xử lý lỗi đăng nhập không thành công (hiển thị thông báo lỗi, ví dụ)
+        console.error(response.data.error);
       }
-      setIsFetching(false); // Tắt trạng thái fetch sau khi hoàn thành
+    } catch (error) {
+      console.error("Lỗi khi gọi API đăng nhập", error);
     }
   };
 
@@ -46,13 +45,12 @@ const Login = () => {
           <h3>Sign In</h3>
 
           <div className="mb-3">
-            <label>Email address</label>
+            <label>Username</label>
             <input
-              type="email"
+              type="username"
               className="form-control"
-              placeholder="Enter email"
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isFetching} // Tắt input khi đang fetch
+              placeholder="Enter username"
+              onChange={(e) => setUserName(e.target.value)}
             />
           </div>
 
@@ -63,17 +61,11 @@ const Login = () => {
               className="form-control"
               placeholder="Enter password"
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isFetching} // Tắt input khi đang fetch
             />
           </div>
 
           <div className="d-grid">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              id="loginButton"
-              disabled={isFetching} // Tắt nút "Login" khi đang fetch
-            >
+            <button type="submit" className="btn btn-primary" id="loginButton">
               Login
             </button>
           </div>
