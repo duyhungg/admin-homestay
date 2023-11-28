@@ -25,7 +25,7 @@ const Login = () => {
         }
       );
       // Xử lý kết quả từ hàm API
-      if (response.data.user) {
+      if (response.data.user.username === "admin") {
         // Điều hướng đến trang chính sau khi đăng nhập thành công
         localStorage.setItem("token", response.data.access_token);
         navigate("/user");
@@ -69,9 +69,6 @@ const Login = () => {
               Login
             </button>
           </div>
-          <p className="forgot-password text-right">
-            <Link to="/register">Sign Up</Link>
-          </p>
         </form>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -51,7 +51,6 @@ const HomePage = () => {
         "https://gin-homestay.onrender.com/api/admin/list_booking_confirmed",
         config
       );
-
       setData(res.data);
     } catch (error) {
       console.error("Lỗi khi gọi API", error);
@@ -79,6 +78,9 @@ const HomePage = () => {
       console.error("Lỗi khi gọi API", error);
     }
   };
+  const handleClickRoom = () => {
+    navigate("/room");
+  };
   return (
     <main className="container">
       <button
@@ -96,6 +98,9 @@ const HomePage = () => {
         } me-2 mt-2`}
       >
         Danh sách đã duyệt
+      </button>
+      <button className="btn btn-secondary me-2 mt-2" onClick={handleClickRoom}>
+        Danh sách phòng
       </button>
 
       {data?.list_booking && (
