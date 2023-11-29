@@ -93,8 +93,11 @@ const Room = () => {
             </li>
           ))}
         </ul>
-        <Link className="btn btn-success mt-5" to="/createroom">
+        <Link className="btn btn-success mt-5 me-5" to="/createroom">
           Thêm
+        </Link>
+        <Link className="btn btn-success mt-5" to="/user">
+          Quay lại
         </Link>
       </div>
     </main>
