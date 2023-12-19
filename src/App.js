@@ -16,6 +16,8 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/createroom" element={<CreateRoom />} />
         </Routes>
+        <div id="fb-root"></div>
+        <div id="fb-customer-chat" class="fb-customerchat"></div>
       </div>
     </Router>
   );
