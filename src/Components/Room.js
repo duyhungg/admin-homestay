@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import Loading from "./Loading/Loading.js";
 const Room = () => {
   const [homestays, setHomestays] = useState([]);
   const [id, setId] = useState();
